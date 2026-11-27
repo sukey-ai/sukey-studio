@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ROOM — 角色观察屋 2.0</title>
+<style>
+:root{--ink:#27343b;--muted:#718087;--paper:#f4f3ee;--panel:#fbfaf6;--line:#e4e2d9;--sage:#9eafa0;--sage-dark:#647d70;--blue:#a9bdc7;--peach:#d9b5a0;--shadow:0 12px 34px #29383b12}
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--paper)}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}
+.app{height:100dvh;display:grid;grid-template-rows:64px 1fr;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#fbfaf6eF;border-bottom:1px solid var(--line);z-index:5}
+.brand{display:flex;align-items:center;gap:12px}.mark{width:31px;height:31px;border-radius:9px;background:#7e9588;color:white;display:grid;place-items:center;font-family:Georgia;font-size:18px}
+.brand strong{font:600 17px Georgia,serif;letter-spacing:.13em}.brand small{display:block;font-size:9px;letter-spacing:.2em;color:var(--muted);margin-top:2px}
+.top-actions{display:flex;align-items:center;gap:9px}.pill{border:1px solid var(--line);background:#fffdf9;border-radius:20px;padding:8px 12px;color:#56646a;font-size:12px}.pill.primary{background:#718a7d;color:white;border-color:#718a7d}.world-name{font-size:12px;color:var(--muted);margin-right:5px}
+.layout{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;padding:14px}
+.stage-wrap{position:relative;min-height:0;border:1px solid #e1dfd6;border-radius:18px;overflow:hidden;background:linear-gradient(145deg,#e9eeea,#e6e9e4 48%,#dfe5e0);box-shadow:var(--shadow)}
+.stage-head{position:absolute;top:18px;left:20px;z-index:2;pointer-events:none}.eyebrow{font-size:9px;letter-spacing:.2em;color:#71847a;text-transform:uppercase}.stage-head h1{font:500 23px Georgia,serif;margin:5px 0 4px}.stage-head p{font-size:11px;color:#68777a;margin:0}
+#scene{position:absolute;inset:0}
+.stage-controls{position:absolute;bottom:17px;left:18px;right:18px;display:flex;align-items:center;justify-content:space-between;z-index:3;pointer-events:none}.stage-controls>*{pointer-events:auto}
+.hint{font-size:10px;color:#65736e;background:#ffffffb8;padding:8px 11px;border-radius:20px;backdrop-filter:blur(8px)}
+.room-tabs{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}.room-tabs button{font-size:10px;padding:8px 11px;border-radius:20px;background:#ffffffd9;color:#53635d;border:1px solid #d9e0d9}.room-tabs button.active{background:#667f71;color:white;border-color:#667f71}
+.side{min-height:0;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;box-shadow:var(--shadow)}
+.card-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.card-title h2{font:500 16px Georgia,serif;margin:0}.subtle{font-size:10px;color:var(--muted)}
+.clock{display:flex;align-items:center;justify-content:space-between}.time{font:500 29px Georgia,serif;letter-spacing:.03em}.date{font-size:10px;color:var(--muted);margin-top:3px}.weather{font-size:11px;color:#73827d;text-align:right}
+.time-actions{display:flex;gap:6px;margin-top:12px}.time-actions button,.action{border:1px solid var(--line);background:#fffefa;border-radius:9px;padding:8px 10px;font-size:10px;color:#58665f}.time-actions button.active,.action.primary{background:#718a7d;color:white;border-color:#718a7d}
+.resident-list{display:flex;flex-direction:column;gap:8px}.resident{display:flex;align-items:center;gap:10px;padding:8px;border-radius:11px;background:#f5f4ee;cursor:pointer;border:1px solid transparent}.resident.selected{border-color:#a8b9ac;background:#eef2ec}.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;font-weight:600;flex-shrink:0}.resident-info{min-width:0;flex:1}.resident-info strong{display:block;font-size:12px;font-weight:600}.resident-info small{display:block;color:#7b8780;font-size:10px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mood{font-size:10px;color:#73847a}
+.detail{font-size:11px;line-height:1.65;color:#64716d}.detail b{color:#34433e;font-weight:600}.meter{height:5px;border-radius:10px;background:#e8e8df;margin:5px 0 9px;overflow:hidden}.meter span{display:block;height:100%;background:#8da595;border-radius:10px}
+.log{display:flex;flex-direction:column;gap:10px;max-height:210px;overflow:auto}.log-item{display:grid;grid-template-columns:35px 1fr;gap:8px;font-size:10px;line-height:1.5;color:#64716d}.log-time{font:12px Georgia,serif;color:#8b9a90}.log-item strong{color:#43524b;font-weight:600}
+.footer-actions{display:flex;gap:7px;flex-wrap:wrap}.footer-actions button{flex:1;min-width:75px}
+.empty{font-size:11px;color:#8a958d;text-align:center;padding:15px 4px}
+.modal-back{position:fixed;inset:0;background:#27343b66;z-index:20;display:none;align-items:center;justify-content:center;padding:16px}.modal-back.show{display:flex}.modal{width:min(520px,100%);max-height:90dvh;overflow:auto;background:#fbfaf6;border-radius:18px;padding:22px;box-shadow:0 24px 70px #182a2b35}.modal h2{font:500 22px Georgia,serif;margin:0 0 5px}.modal p{font-size:11px;color:var(--muted);margin:0 0 17px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:10px;color:#6f7c75}.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:9px;background:#fffefa;padding:10px;font-size:12px;color:var(--ink);outline:none}.field textarea{min-height:65px;resize:vertical}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:17px}.tag-note{font-size:9px;color:#8b968f;margin-top:8px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);padding:10px 15px;background:#34453e;color:white;border-radius:22px;font-size:11px;opacity:0;transition:.25s;pointer-events:none;z-index:50}.toast.show{opacity:1}
+@media(max-width:850px){.app{grid-template-rows:58px 1fr}.layout{grid-template-columns:1fr;grid-template-rows:minmax(320px,56vh) 1fr;padding:8px;gap:8px}.side{display:grid;grid-template-columns:1fr 1fr;align-content:start;overflow:auto}.side .card:first-child,.side .card:last-child{grid-column:1/-1}.stage-head h1{font-size:20px}.topbar{padding:0 12px}.world-name{display:none}.stage-controls{align-items:flex-end}.hint{max-width:130px;line-height:1.4}.room-tabs{max-width:65%}}
+@media(max-width:480px){.side{grid-template-columns:1fr}.side .card{grid-column:1/-1}.layout{grid-template-rows:minmax(300px,50vh) 1fr}.pill{padding:7px 9px}.brand strong{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+ <div class="brand"><div class="mark">R</div><div><strong>ROOM</strong><small>THE OBSERVATION HOUSE · 2.0</small></div></div>
+ <div class="top-actions"><span class="world-name" id="worldLabel">我的第一个世界</span><button class="pill" id="worldsBtn">世界存档 ▾</button><button class="pill primary" id="addResidentBtn">＋ 居民</button></div>
+</header>
+<main class="layout">
+ <section class="stage-wrap">
+  <div class="stage-head"><div class="eyebrow">A LIVING MINIATURE WORLD</div><h1 id="sceneTitle">一座正在生活的房子</h1><p id="sceneSub">点击房间观察居民，拖动旋转视角，滚轮缩放。</p></div>
+  <div id="scene"></div>
+  <div class="stage-controls"><div class="hint">拖动旋转 · 滚轮缩放 · 点击房间</div><div class="room-tabs" id="roomTabs"></div></div>
+ </section>
+ <aside class="side">
+  <section class="card">
+   <div class="card-title"><h2>世界时间</h2><span class="subtle" id="dayCount">DAY 01</span></div>
+   <div class="clock"><div><div class="time" id="clockTime">08:00</div><div class="date" id="clockDate">春日 · 星期一</div></div><div class="weather">☀　晴朗<br><span class="subtle">室内自然光</span></div></div>
+   <div class="time-actions"><button id="pauseBtn">Ⅱ 暂停</button><button id="stepBtn">＋ 1小时</button><button id="dayBtn">＋ 1天</button></div>
+  </section>
+  <section class="card">
+   <div class="card-title"><h2>居民</h2><button class="action" id="addResidentSmall">＋ 创建</button></div>
+   <div class="resident-list" id="residentList"></div>
+  </section>
+  <section class="card" id="profileCard">
+   <div class="card-title"><h2>居民档案</h2><span class="subtle">PROFILE</span></div>
+   <div class="detail" id="profileContent">选择一位居民，查看他的状态与日常。</div>
+  </section>
+  <section class="card">
+   <div class="card-title"><h2>今日观察</h2><span class="subtle">WORLD LOG</span></div>
+   <div class="log" id="eventLog"><div class="empty">世界刚刚安静下来。居民的一天即将开始。</div></div>
+  </section>
+  <section class="card">
+   <div class="card-title"><h2>上帝视角</h2><span class="subtle">WORLD CONTROL</span></div>
+   <div class="footer-actions"><button class="action" id="eventBtn">安排事件</button><button class="action" id="editHouseBtn">房屋设置</button><button class="action" id="exportBtn">导出世界</button><button class="action" id="importBtn">导入世界</button></div>
+  </section>
+ </aside>
+</main>
+</div>
+<div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<script type="importmap">\n{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}\n</script>\n<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+
+const $=id=>document.getElementById(id);
+const COLORS=['#8b9e91','#c69c87','#899eb4','#b7a17c','#9b91aa','#789b9a'];
+const ROOM_DEFS=[
+ {id:'living',name:'客厅',x:-2.5,z:1.5,w:5,d:4,color:'#d7d4c7'},
+ {id:'kitchen',name:'厨房',x:2.5,z:1.5,w:5,d:4,color:'#d6d8cf'},
+ {id:'bed1',name:'卧室 A',x:-2.5,z:-2.5,w:5,d:4,color:'#d9cfc2'},
+ {id:'bed2',name:'卧室 B',x:2.5,z:-2.5,w:5,d:4,color:'#d2dce0'}
+];
+const freshWorld=(name='我的第一个世界')=>({id:crypto.randomUUID(),name,created:Date.now(),lastSeen:Date.now(),minutes:8*60,day:1,paused:false,selectedRoom:'all',selectedResident:null,residents:[
+ {id:crypto.randomUUID(),name:'林知夏',age:22,job:'插画师',traits:'安静、细腻、有一点慢热',hobby:'画画、植物、旧电影',bio:'喜欢把日常的小事收集起来。',mood:'平静',energy:78,social:62,room:'living',x:-2.4,z:1.1,color:COLORS[0],relations:{},memory:['早晨给窗边的植物浇了水。']},
+ {id:crypto.randomUUID(),name:'周予安',age:24,job:'建筑设计师',traits:'理性、温和、偶尔固执',hobby:'建筑、咖啡、骑行',bio:'习惯先观察，再表达自己的想法。',mood:'专注',energy:86,social:55,room:'kitchen',x:2.3,z:1.3,color:COLORS[1],relations:{},memory:['今天打算整理工作桌。']}
+],events:[]});
+let worlds=[],active=null,scene,renderer,camera,controls,raycaster,mouse,roomMeshes=[],residentMeshes=new Map(),clockTimer=null;
+function load(){try{worlds=JSON.parse(localStorage.getItem('room_worlds')||'[]')}catch{worlds=[]}if(!worlds.length){active=freshWorld();worlds=[active];save()}else{active=worlds[0];const away=Math.max(0,Math.min(1440,Math.floor((Date.now()-(active.lastSeen||Date.now()))/60000)));if(away>10)simulateOffline(away);}}
+function save(){if(!active)return;active.lastSeen=Date.now();const i=worlds.findIndex(w=>w.id===active.id);if(i<0)worlds.push(active);else worlds[i]=active;localStorage.setItem('room_worlds',JSON.stringify(worlds));}
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1900)}
+function addEvent(text,time=fmtTime()){active.events.unshift({text,time,day:active.day});active.events=active.events.slice(0,40);renderLog();save()}
+function fmtTime(){let m=active.minutes%1440;return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
+function simulateOffline(mins){const hours=Math.max(1,Math.floor(mins/60));for(let i=0;i<Math.min(hours,24);i++)simulateHour(true);addEvent(`你离开了约 ${hours} 小时。居民在这段时间里继续自己的生活。`);active.lastSeen=Date.now();}
+function simulateHour(quiet=false){active.minutes+=60;if(active.minutes>=1440){active.minutes-=1440;active.day++}
+ const hour=Math.floor(active.minutes/60);
+ active.residents.forEach(r=>{r.energy=Math.max(12,Math.min(100,r.energy+(hour>=22||hour<7?8:-4)));if(hour>=22||hour<7){r.mood='困倦';if(Math.random()<.25)r.room=r.room.startsWith('bed')?r.room:(Math.random()<.5?'bed1':'bed2')}else{const choices=hour<10?['kitchen','living']:hour<17?['living','kitchen','bed1','bed2']:['living','kitchen'];if(Math.random()<.48)r.room=choices[Math.floor(Math.random()*choices.length)];if(Math.random()<.3)r.mood=['平静','专注','愉快','有些疲惫'][Math.floor(Math.random()*4)]}
+ const def=ROOM_DEFS.find(a=>a.id===r.room)||ROOM_DEFS[0];r.x=def.x+(Math.random()-.5)*Math.max(1,def.w-1);r.z=def.z+(Math.random()-.5)*Math.max(1,def.d-1);
+ });
+ if(!quiet){const candidates=active.residents;if(candidates.length){const r=candidates[Math.floor(Math.random()*candidates.length)];const actions={living:['坐在沙发上翻看一本书','打开窗户，让空气流进来','整理茶几上的杂物'],kitchen:['给自己准备了一份简单的食物','站在料理台前倒了一杯水','顺手收拾了厨房'],bed1:['回房间休息了一会儿','整理床头柜上的小物件'],bed2:['在房间里听了一会儿音乐','坐在窗边发呆']};const a=actions[r.room]||actions.living;addEvent(`${r.name}${a[Math.floor(Math.random()*a.length)]}。`)}}
+ updateUI();updateScenePositions();save();
+}
+function init3D(){
+ const host=$('scene');scene=new THREE.Scene();scene.background=new THREE.Color('#e7ece7');scene.fog=new THREE.Fog('#e7ece7',20,38);
+ camera=new THREE.PerspectiveCamera(34,host.clientWidth/host.clientHeight,.1,100);camera.position.set(12,13,15);
+ try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});}catch(err){host.innerHTML='<div style="padding:28px;color:#46564d;font:14px/1.8 sans-serif">3D 场景暂时无法启动。请使用较新的 Safari/Chrome，并确认浏览器允许 WebGL。页面其他功能仍可继续使用。</div>';console.error(err);return;}renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;host.appendChild(renderer.domElement);
+ controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.target.set(0,0,0);controls.maxPolarAngle=Math.PI/2.05;controls.minDistance=8;controls.maxDistance=27;
+ scene.add(new THREE.HemisphereLight('#fff8e9','#89958c',2.1));const sun=new THREE.DirectionalLight('#fff2d8',3.2);sun.position.set(-7,13,8);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);scene.add(sun);
+ raycaster=new THREE.Raycaster();mouse=new THREE.Vector2();buildHouse();window.addEventListener('resize',resize);renderer.domElement.addEventListener('pointerdown',onSceneClick);
+ animate();
+}
+function mat(color,rough=.85){return new THREE.MeshStandardMaterial({color,roughness:rough})}
+function box(parent,name,x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(color,opts.rough??.85));m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;m.name=name;parent.add(m);return m}
+function buildHouse(){
+ const ground=box(scene,'ground',0,-.28,0,12.4,.35,10.4,'#c9c7b9');ground.receiveShadow=true;
+ // perimeter foundation and open cutaway walls
+ box(scene,'back wall',0,1.25,-5,12,.12,.18,'#eee9dd');box(scene,'left wall',-6,1.25,0,.18,.12,10,'#eee9dd');
+ // room floors
+ ROOM_DEFS.forEach((r,i)=>{const floor=box(scene,r.id,r.x,-.04,r.z,r.w,.12,r.d,r.color);floor.userData.room=r.id;roomMeshes.push(floor);
+   // low cutaway walls around room edges; leave front open
+   const wallColor='#f1eee5';box(scene,r.id+' back',r.x,0.95,r.z-r.d/2,r.w,.12,.10,wallColor);
+   if(i===0||i===2)box(scene,r.id+' divider',0,.75,r.z,.10,1.5,r.d,wallColor);
+   if(i===1||i===3)box(scene,r.id+' side',r.x+r.w/2,.65,r.z,.10,1.3,r.d,wallColor);
+ });
+ // trim lines and windows
+ box(scene,'back window',-2,1.25,-4.91,2.1,.65,.06,'#b6d0d0');box(scene,'side window',-5.91,1.2,-2.3,.06,.8,1.5,'#b6d0d0');
+ // living room furniture
+ box(scene,'rug',-2.6,.04,1.7,3.5,.025,2.2,'#b9b7a8');
+ box(scene,'sofa base',-3.4,.42,1.4,2.1,.55,.9,'#879b91');box(scene,'sofa back',-3.4,.82,.98,2.1,.65,.22,'#879b91');
+ box(scene,'coffee table',-1.8,.38,1.65,1.15,.12,.65,'#9b806b');
+ // bookshelf
+ box(scene,'bookshelf',-5.2,.78,2.2,.42,1.5,1.25,'#a4876d');for(let y=.35;y<1.4;y+=.42)box(scene,'shelf',-4.96,y,2.2,.12,.045,1.15,'#e3d7c5');
+ // kitchen island and cabinets
+ box(scene,'kitchen counter',2.4,.56,1.35,3.1,.85,.75,'#b9b7a9');box(scene,'countertop',2.4,1.02,1.35,3.2,.10,.82,'#eee9dd');
+ box(scene,'dining table',3.7,.65,3.0,1.5,.12,.9,'#9b806b');[-.5,.5].forEach(dx=>[-.25,.25].forEach(dz=>box(scene,'chair',3.7+dx,.35,3+dz,.35,.55,.35,'#8d9b91')));
+ // bedrooms
+ box(scene,'bed A frame',-3.5,.35,-2.8,2.5,.35,1.7,'#9b806b');box(scene,'bed A mattress',-3.5,.58,-2.8,2.42,.18,1.65,'#eee8dd');box(scene,'pillow A',-3.5,.72,-3.42,.8,.14,.5,'#b5c7c0');
+ box(scene,'wardrobe A',-5.4,.95,-1.15,.8,1.8,.85,'#a88f78');box(scene,'bed B frame',3.3,.35,-2.8,2.3,.35,1.65,'#9b806b');box(scene,'bed B mattress',3.3,.58,-2.8,2.22,.18,1.55,'#e8e4df');box(scene,'pillow B',3.3,.72,-3.43,.8,.14,.5,'#b8cbd1');box(scene,'wardrobe B',5.3,.95,-1.2,.8,1.8,.85,'#a88f78');
+ // small plants
+ makePlant(-5.1,.08,4.0);makePlant(5.2,.08,4.0);makePlant(-.7,.08,-4.3);
+ // perimeter edge accents
+ const edge=mat('#a9a99b');const outline=new THREE.Mesh(new THREE.BoxGeometry(12.25,.08,10.25),new THREE.MeshStandardMaterial({color:'#a9a99b',wireframe:true}));outline.position.y=-.03;scene.add(outline);
+ rebuildResidents();
+}
+function makePlant(x,y,z){const pot= new THREE.Mesh(new THREE.CylinderGeometry(.18,.14,.28,12),mat('#b98f79'));pot.position.set(x,y+.14,z);pot.castShadow=true;scene.add(pot);for(let i=0;i<5;i++){const leaf=new THREE.Mesh(new THREE.SphereGeometry(.17,10,8),mat('#78947c'));leaf.scale.set(.6,1.7,.6);leaf.position.set(x+(Math.random()-.5)*.22,y+.45+Math.random()*.22,z+(Math.random()-.5)*.22);leaf.castShadow=true;scene.add(leaf)}}
+function makeResidentMesh(r){const g=new THREE.Group();const body=new THREE.Mesh(new THREE.CapsuleGeometry(.18,.48,4,8),mat(r.color));body.position.y=.47;body.castShadow=true;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.19,16,12),mat('#e2bfa8'));head.position.y=.88;head.castShadow=true;g.add(head);const hair=new THREE.Mesh(new THREE.SphereGeometry(.195,16,10,0,Math.PI*2,0,Math.PI*.55),mat('#51483f'));hair.position.y=.96;g.add(hair);const label=document.createElement('canvas');label.width=256;label.height=64;const ctx=label.getContext('2d');ctx.fillStyle='#ffffff';ctx.font='24px sans-serif';ctx.textAlign='center';ctx.fillText(r.name,128,42);const tex=new THREE.CanvasTexture(label);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true}));sprite.scale.set(1.4,.35,1);sprite.position.y=1.35;g.add(sprite);g.position.set(r.x,0,r.z);g.userData.residentId=r.id;scene.add(g);residentMeshes.set(r.id,g)}
+function rebuildResidents(){residentMeshes.forEach(g=>scene.remove(g));residentMeshes.clear();active.residents.forEach(makeResidentMesh)}
+function updateScenePositions(){active.residents.forEach(r=>{const g=residentMeshes.get(r.id);if(g){g.position.x=THREE.MathUtils.lerp(g.position.x,r.x,.4);g.position.z=THREE.MathUtils.lerp(g.position.z,r.z,.4)}})}
+function resize(){const h=$('scene');if(!renderer)return;camera.aspect=h.clientWidth/h.clientHeight;camera.updateProjectionMatrix();renderer.setSize(h.clientWidth,h.clientHeight)}
+function animate(){requestAnimationFrame(animate);controls?.update();renderer?.render(scene,camera)}
+function onSceneClick(e){const rect=renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-rect.left)/rect.width)*2-1;mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(mouse,camera);const hits=raycaster.intersectObjects(scene.children,true);if(!hits.length)return;let o=hits[0].object;while(o&&!o.userData.residentId&&!o.userData.room)o=o.parent;if(o?.userData.residentId){active.selectedResident=o.userData.residentId;renderResidents()}else if(o?.userData.room){active.selectedRoom=o.userData.room;renderRoomTabs();$('sceneTitle').textContent=ROOM_DEFS.find(r=>r.id===o.userData.room)?.name||'房间';$('sceneSub').textContent='当前观察区域 · 点击居民查看个人状态';renderResidents()}}
+function updateUI(){ $('clockTime').textContent=fmtTime();$('dayCount').textContent='DAY '+String(active.day).padStart(2,'0');$('clockDate').textContent=`第 ${active.day} 天 · ${['星期一','星期二','星期三','星期四','星期五','星期六','星期日'][(active.day-1)%7]}`;$('worldLabel').textContent=active.name;$('pauseBtn').textContent=active.paused?'▶ 继续':'Ⅱ 暂停';$('pauseBtn').classList.toggle('active',active.paused);renderResidents();renderLog();renderRoomTabs()}
+function renderResidents(){const list=$('residentList');list.innerHTML='';active.residents.forEach(r=>{const el=document.createElement('div');el.className='resident'+(active.selectedResident===r.id?' selected':'');el.innerHTML=`<div class="avatar" style="background:${r.color}">${r.name.slice(0,1)}</div><div class="resident-info"><strong>${esc(r.name)}</strong><small>${esc(r.job)} · ${esc(r.room==='living'?'客厅':r.room==='kitchen'?'厨房':r.room==='bed1'?'卧室 A':'卧室 B')}</small></div><span class="mood">${esc(r.mood)}</span>`;el.onclick=()=>{active.selectedResident=r.id;active.selectedRoom=r.room;renderResidents();renderRoomTabs();focusResident(r)};list.appendChild(el)});if(!active.residents.length)list.innerHTML='<div class="empty">还没有居民，创建第一个角色吧。</div>';const r=active.residents.find(x=>x.id===active.selectedResident);$('profileContent').innerHTML=r?`<b>${esc(r.name)}</b> · ${r.age} 岁<br>${esc(r.job)}<br><br><b>性格</b><br>${esc(r.traits||'尚未填写')}<br><br><b>兴趣</b><br>${esc(r.hobby||'尚未填写')}<br><br><b>背景</b><br>${esc(r.bio||'暂无')}<br><br><b>当前心情</b>　${esc(r.mood)}<br><div class="subtle">精力 ${r.energy}%</div><div class="meter"><span style="width:${r.energy}%"></span></div><div class="subtle">社交需求 ${r.social}%</div><div class="meter"><span style="width:${r.social}%"></span></div><b>最近记忆</b><br>${(r.memory||[]).slice(-3).map(esc).join('<br>')}`:'选择一位居民，查看他的状态与日常。';}
+function focusResident(r){const def=ROOM_DEFS.find(a=>a.id===r.room);if(def){controls.target.set(def.x,0,def.z);camera.position.set(def.x+7,8,def.z+8)}}
+function renderLog(){const el=$('eventLog');el.innerHTML=active.events.length?active.events.slice(0,12).map(e=>`<div class="log-item"><div class="log-time">${esc(e.time||'--:--')}</div><div>${esc(e.text)}</div></div>`).join(''):'<div class="empty">还没有发生事件。</div>'}
+function renderRoomTabs(){const tabs=[{id:'all',name:'全屋'} ,...ROOM_DEFS];$('roomTabs').innerHTML=tabs.map(r=>`<button data-room="${r.id}" class="${active.selectedRoom===r.id?'active':''}">${r.name}</button>`).join('');$('roomTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{active.selectedRoom=b.dataset.room;renderRoomTabs();if(b.dataset.room==='all'){controls.target.set(0,0,0);camera.position.set(12,13,15);$('sceneTitle').textContent='一座正在生活的房子';$('sceneSub').textContent='点击房间观察居民，拖动旋转视角，滚轮缩放。'}else{const d=ROOM_DEFS.find(x=>x.id===b.dataset.room);controls.target.set(d.x,0,d.z);camera.position.set(d.x+7,8,d.z+8);$('sceneTitle').textContent=d.name;$('sceneSub').textContent='当前观察区域 · 点击居民查看个人状态'}})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function openModal(content){$('modal').innerHTML=content;$('modalBack').classList.add('show')}
+function closeModal(){$('modalBack').classList.remove('show')}
+$('modalBack').addEventListener('click',e=>{if(e.target===$('modalBack'))closeModal()});
+function residentForm(){openModal(`<h2>创建一位居民</h2><p>为这个世界添加一个独立生活的人。你可以先建立基础档案，之后再继续丰富。</p><div class="form-grid">
+<div class="field"><label>姓名</label><input id="fName" placeholder="例如：沈知遥"></div>
+<div class="field"><label>年龄</label><input id="fAge" type="number" min="16" max="99" value="22"></div>
+<div class="field"><label>职业</label><input id="fJob" placeholder="例如：摄影师 / 学生"></div>
+<div class="field"><label>初始心情</label><select id="fMood"><option>平静</option><option>愉快</option><option>专注</option><option>疲惫</option><option>有些烦躁</option></select></div>
+<div class="field full"><label>性格关键词（可自定义）</label><input id="fTraits" placeholder="例如：外向、敏感、慢热、好奇"></div>
+<div class="field full"><label>兴趣爱好</label><input id="fHobby" placeholder="例如：烘焙、音乐、徒步"></div>
+<div class="field full"><label>人物背景</label><textarea id="fBio" placeholder="他/她从哪里来？有什么经历、目标或习惯？"></textarea></div></div><div class="tag-note">提示：角色目前由本地行为模拟驱动。AI 深度人格与自然对话将在后续版本接入。</div><div class="modal-actions"><button class="action" id="cancelModal">取消</button><button class="action primary" id="saveResident">创建居民</button></div>`);
+$('cancelModal').onclick=closeModal;$('saveResident').onclick=()=>{const name=$('fName').value.trim();if(!name){toast('请先填写姓名');return}const r={id:crypto.randomUUID(),name,age:+$('fAge').value||22,job:$('fJob').value.trim()||'自由职业',mood:$('fMood').value,traits:$('fTraits').value.trim(),hobby:$('fHobby').value.trim(),bio:$('fBio').value.trim(),energy:80,social:60,room:'living',x:-2.5+(Math.random()-.5)*2,z:1.5+(Math.random()-.5)*2,color:COLORS[active.residents.length%COLORS.length],relations:{},memory:['刚刚搬进这座房子。']};active.residents.push(r);active.selectedResident=r.id;rebuildResidents();closeModal();addEvent(`${name}搬进了这座房子。`);renderResidents();toast(`${name} 已入住`)}}
+function worldsModal(){openModal(`<h2>世界存档</h2><p>每个世界独立保存居民、关系、房屋时间和事件记录。</p><div id="worldList"></div><div class="modal-actions"><button class="action" id="newWorld">＋ 新建世界</button><button class="action" id="closeWorlds">完成</button></div>`);const list=$('worldList');list.innerHTML=worlds.map(w=>`<div class="resident" style="margin-bottom:7px"><div class="avatar" style="background:#82998a">⌂</div><div class="resident-info"><strong>${esc(w.name)}</strong><small>${w.residents.length} 位居民 · 第 ${w.day} 天</small></div><button class="action" data-load="${w.id}">${w.id===active.id?'当前':'进入'}</button><button class="action" data-rename="${w.id}">改名</button></div>`).join('');list.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{save();active=worlds.find(w=>w.id===b.dataset.load);rebuildResidents();updateUI();closeModal();toast('已切换世界')});list.querySelectorAll('[data-rename]').forEach(b=>b.onclick=()=>{const w=worlds.find(w=>w.id===b.dataset.rename);const n=prompt('为这个世界命名',w.name);if(n?.trim()){w.name=n.trim();save();worldsModal()}});$('newWorld').onclick=()=>{const n=prompt('新世界的名字','新的生活');if(n?.trim()){save();active=freshWorld(n.trim());worlds.push(active);rebuildResidents();updateUI();closeModal();toast('新世界已创建')}};$('closeWorlds').onclick=closeModal}
+function eventModal(){openModal(`<h2>安排一件小事</h2><p>你可以向世界投下一颗小小的石子，看看它会激起怎样的涟漪。</p><div class="form-grid"><div class="field full"><label>事件内容</label><textarea id="eventText" placeholder="例如：今天傍晚突然下起了雨，大家都回到了客厅。"></textarea></div></div><div class="modal-actions"><button class="action" id="cancelModal">取消</button><button class="action primary" id="applyEvent">发生这件事</button></div>`);$('cancelModal').onclick=closeModal;$('applyEvent').onclick=()=>{const t=$('eventText').value.trim();if(!t)return;addEvent('【上帝干预】'+t);active.residents.forEach(r=>{r.mood='有些好奇';r.memory.push(t)});renderResidents();closeModal();toast('事件已写入世界')}}
+$('addResidentBtn').onclick=residentForm;$('addResidentSmall').onclick=residentForm;$('worldsBtn').onclick=worldsModal;$('eventBtn').onclick=eventModal;
+$('pauseBtn').onclick=()=>{active.paused=!active.paused;updateUI();save()};$('stepBtn').onclick=()=>simulateHour();$('dayBtn').onclick=()=>{for(let i=0;i<24;i++)simulateHour(true);addEvent('新的一天开始了。');updateUI()};
+$('editHouseBtn').onclick=()=>{const n=prompt('给这座房子取个名字',active.houseName||'四季小屋');if(n?.trim()){active.houseName=n.trim();$('sceneTitle').textContent=n.trim();save();toast('房屋名称已更新')}};
+$('exportBtn').onclick=()=>{save();const blob=new Blob([JSON.stringify(active,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(active.name||'ROOM世界')+'.json';a.click();URL.revokeObjectURL(a.href);toast('世界存档已导出')};
+$('importBtn').onclick=()=>{const input=document.createElement('input');input.type='file';input.accept='.json,application/json';input.onchange=async()=>{try{const w=JSON.parse(await input.files[0].text());if(!w.residents||!w.id)throw Error();worlds.push(w);active=w;rebuildResidents();updateUI();save();toast('世界导入成功')}catch{toast('文件格式不正确')}};input.click()};
+load();init3D();updateUI();if(!active.events.length)addEvent('清晨的光落进屋子。新的一天开始了。');setInterval(()=>{if(!active.paused)simulateHour()},30000);window.addEventListener('beforeunload',save);
+</script>
+</body>
+</html>
